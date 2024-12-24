@@ -1,0 +1,15 @@
+value = { ASCII_DIGIT+ }
+
+level_header = _{ "[levels]" }
+limit_header = _{ "[limits]" }
+
+key       = { "belt" | "extractor" | "adder" | "multiplier" }
+limit_key = { "limit" | "goal" }
+
+level_entry = { key ~ " = " ~ value }
+limit_entry = { limit_key ~ " = " ~ value }
+
+levels = { level_header ~ NEWLINE ~ (level_entry ~ NEWLINE)* ~ level_entry? }
+limits = { limit_header ~ NEWLINE ~ (limit_entry ~ NEWLINE)* ~ limit_entry? }
+
+file = { SOI ~ levels ~ limits ~ EOI }

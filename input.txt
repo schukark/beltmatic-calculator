@@ -1,0 +1,8 @@
+[levels]
+belt = 4
+extractor = 4
+adder = 4
+multiplier = 3
+[limits]
+limit = 8
+goal = 308
