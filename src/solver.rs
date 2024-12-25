@@ -14,11 +14,6 @@ pub fn get_best_route(
         .get("extractor")
         .ok_or(ConfigError::ExtractorLevel)?
         - 1;
-    let adder_level = *level_info.get("adder").ok_or(ConfigError::AdderLevel)? - 1;
-    let multiplier_level = *level_info
-        .get("multiplier")
-        .ok_or(ConfigError::MultiplierLevel)?
-        - 1;
 
     let (_, mem) = dp;
 
@@ -35,15 +30,18 @@ pub fn get_best_route(
     let mut right_route = get_best_route(dp, j, level_info)?;
 
     let mut result = left_route.clone();
-
     result.append(&mut right_route);
-
     let mut this_string = (format!("{i} {op} {j} -> {goal}"), "".to_owned());
+
+    let building_level = *level_info
+        .get(op.get_factory_name())
+        .ok_or(ConfigError::MultiplierLevel)?
+        - 1;
 
     let influx = BELT[belt_level as usize] * EXTRACTOR[extractor_level as usize];
     this_string.1 += &format!(
         "{} {}s",
-        f32::ceil(influx / op.get_factory_throughput(multiplier_level as usize)),
+        f32::ceil(influx / op.get_factory_throughput(building_level as usize)),
         op.get_factory_name()
     );
 
