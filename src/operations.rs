@@ -1,5 +1,7 @@
 use std::{error::Error, fmt::Display};
 
+use crate::Info;
+
 pub trait Operation {
     fn execute(&self, a: i32, b: i32) -> Result<i32, Box<dyn Error>>;
 }
@@ -38,7 +40,7 @@ pub const ADDER: [f32; 8] = [0.25, 0.333, 0.4, 0.5, 0.667, 1.0, 1.5, 2.0];
 pub const MULTIPLIER: [f32; 8] = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0];
 
 impl OpList {
-    pub const VALUES: [OpList; 2] = [OpList::Add, OpList::Mul];
+    const VALUES: [OpList; 2] = [OpList::Add, OpList::Mul];
 
     pub fn get_factory_name(&self) -> &'static str {
         match self {
@@ -52,5 +54,13 @@ impl OpList {
             OpList::Add => ADDER[level],
             OpList::Mul => MULTIPLIER[level],
         }
+    }
+
+    pub fn from_level_info(level_info: &Info) -> Vec<OpList> {
+        OpList::VALUES
+            .iter()
+            .cloned()
+            .filter(|op| level_info.contains_key(op.get_factory_name()))
+            .collect()
     }
 }

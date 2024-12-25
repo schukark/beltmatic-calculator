@@ -15,7 +15,11 @@ pub fn get_best_route(
         .ok_or(ConfigError::ExtractorLevel)?
         - 1;
 
-    let (_, mem) = dp;
+    let (dist, mem) = dp;
+
+    if !dist.contains_key(&goal) {
+        return Err(Box::new(ConfigError::UnreachableNumber));
+    }
 
     if !mem.contains_key(&goal) {
         let belt_count = EXTRACTOR[extractor_level as usize] * BELT[belt_level as usize];
@@ -33,16 +37,17 @@ pub fn get_best_route(
     result.append(&mut right_route);
     let mut this_string = (format!("{i} {op} {j} -> {goal}"), "".to_owned());
 
+    let factory_name = op.get_factory_name();
     let building_level = *level_info
-        .get(op.get_factory_name())
-        .ok_or(ConfigError::MultiplierLevel)?
+        .get(factory_name)
+        .ok_or(ConfigError::BuildingMissing(factory_name))?
         - 1;
 
     let influx = BELT[belt_level as usize] * EXTRACTOR[extractor_level as usize];
     this_string.1 += &format!(
         "{} {}s",
         f32::ceil(influx / op.get_factory_throughput(building_level as usize)),
-        op.get_factory_name()
+        factory_name
     );
 
     result.push(this_string);
@@ -50,7 +55,7 @@ pub fn get_best_route(
     Ok(result)
 }
 
-pub fn solve(limit_info: Info) -> Result<Dp, Box<dyn Error>> {
+pub fn solve(limit_info: Info, available_ops: &[OpList]) -> Result<Dp, Box<dyn Error>> {
     let goal = *limit_info.get("goal").ok_or(ConfigError::Goal)?;
     let extractor_limit = *limit_info.get("limit").ok_or(ConfigError::Limit)?;
 
@@ -75,7 +80,7 @@ pub fn solve(limit_info: Info) -> Result<Dp, Box<dyn Error>> {
 
         for (&i, &d_i) in &dist {
             for (&j, &d_j) in &dist {
-                for op in OpList::VALUES {
+                for &op in available_ops {
                     if !dist.contains_key(&i) || !dist.contains_key(&j) {
                         continue;
                     }
@@ -87,6 +92,10 @@ pub fn solve(limit_info: Info) -> Result<Dp, Box<dyn Error>> {
                     }
 
                     let new_value = new_value.unwrap();
+                    if new_value > goal * 2 || new_value < -goal * 2 {
+                        continue;
+                    }
+
                     let count = i32::max(d_i, d_j) + 1;
 
                     if *dist.get(&new_value).unwrap_or(&i32::MAX) > count {

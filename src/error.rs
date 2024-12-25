@@ -10,8 +10,8 @@ pub enum ConfigError {
     BeltLevel,
     #[error("No extractor level provided")]
     ExtractorLevel,
-    #[error("No adder level provided")]
-    AdderLevel,
-    #[error("No multiplier level provided")]
-    MultiplierLevel,
+    #[error("No building level provided {0}")]
+    BuildingMissing(&'static str),
+    #[error ("Unreachable number with ops provided")]
+    UnreachableNumber,
 }
