@@ -3,7 +3,7 @@ value = { ASCII_DIGIT+ }
 level_header = _{ "[levels]" }
 limit_header = _{ "[limits]" }
 
-key       = { "belt" | "extractor" | "adder" | "multiplier" }
+key       = { "belt" | "extractor" | "adder" | "multiplier" | "subtractor" | "divider" | "exponentiator" }
 limit_key = { "limit" | "goal" }
 
 level_entry = { key ~ " = " ~ value }

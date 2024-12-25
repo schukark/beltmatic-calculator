@@ -3,6 +3,7 @@ belt = 5
 extractor = 4
 adder = 5
 multiplier = 4
+subtractor = 4
 [limits]
 limit = 8
 goal = 29
