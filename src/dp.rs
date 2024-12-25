@@ -70,14 +70,16 @@ pub fn get_best_route(
     goal: i32,
     level_info: &Info,
 ) -> Result<Vec<(String, String)>, Box<dyn Error>> {
-    let belt_level = *level_info.get("belt").ok_or(ConfigError::BeltLevel)?;
+    let belt_level = *level_info.get("belt").ok_or(ConfigError::BeltLevel)? - 1;
     let extractor_level = *level_info
         .get("extractor")
-        .ok_or(ConfigError::ExtractorLevel)?;
-    let adder_level = *level_info.get("adder").ok_or(ConfigError::AdderLevel)?;
+        .ok_or(ConfigError::ExtractorLevel)?
+        - 1;
+    let adder_level = *level_info.get("adder").ok_or(ConfigError::AdderLevel)? - 1;
     let multiplier_level = *level_info
         .get("multiplier")
-        .ok_or(ConfigError::MultiplierLevel)?;
+        .ok_or(ConfigError::MultiplierLevel)?
+        - 1;
 
     let (_, mem) = dp;
 
