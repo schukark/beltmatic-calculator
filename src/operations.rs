@@ -46,4 +46,11 @@ impl OpList {
             OpList::Mul => "multiplier",
         }
     }
+
+    pub fn get_factory_throughput(&self, level: usize) -> f32 {
+        match self {
+            OpList::Add => ADDER[level],
+            OpList::Mul => MULTIPLIER[level],
+        }
+    }
 }

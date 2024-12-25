@@ -26,7 +26,7 @@ pub fn get_best_route(
         let belt_count = EXTRACTOR[extractor_level as usize] * BELT[belt_level as usize];
         return Ok(vec![(
             format!("(extractor) -> {}", goal),
-            format!("({} numbers/s out)", belt_count),
+            format!("{}/s out", belt_count),
         )]);
     }
 
@@ -40,19 +40,12 @@ pub fn get_best_route(
 
     let mut this_string = (format!("{i} {op} {j} -> {goal}"), "".to_owned());
 
-    if op == OpList::Add {
-        let influx = BELT[belt_level as usize] * EXTRACTOR[extractor_level as usize];
-        this_string.1 += &format!(
-            "{} adders required",
-            f32::ceil(influx / ADDER[adder_level as usize]) as i32
-        );
-    } else if op == OpList::Mul {
-        let influx = BELT[belt_level as usize] * EXTRACTOR[extractor_level as usize];
-        this_string.1 += &format!(
-            "{} multipliers required",
-            f32::ceil(influx / MULTIPLIER[multiplier_level as usize]) as i32
-        );
-    }
+    let influx = BELT[belt_level as usize] * EXTRACTOR[extractor_level as usize];
+    this_string.1 += &format!(
+        "{} {}s",
+        f32::ceil(influx / op.get_factory_throughput(multiplier_level as usize)),
+        op.get_factory_name()
+    );
 
     result.push(this_string);
 
