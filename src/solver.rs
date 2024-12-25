@@ -1,69 +1,8 @@
 use std::{collections::HashMap, error::Error};
 
-use crate::{
-    error::ConfigError,
-    operations::{OpList, Operation},
-    Info,
-};
+use crate::{error::ConfigError, operations::*, Info};
 
 pub type Dp = (HashMap<i32, i32>, HashMap<i32, (i32, i32, OpList)>); // Min count, mem
-
-pub fn calc_dp(limit_info: Info) -> Result<Dp, Box<dyn Error>> {
-    let mut dp: HashMap<i32, i32> = HashMap::new();
-    let mut mem: HashMap<i32, (i32, i32, OpList)> = HashMap::new();
-
-    dp.insert(0, 0);
-
-    let goal = *limit_info.get("goal").ok_or(ConfigError::Goal)?;
-    let extractor_limit = *limit_info.get("limit").ok_or(ConfigError::Limit)?;
-
-    // We can mine those directly
-    for i in 1..=extractor_limit {
-        dp.insert(i, 1);
-    }
-
-    for i in extractor_limit + 1..=goal {
-        dp.insert(i, i32::MAX);
-    }
-
-    for i in 1..=goal {
-        for j in 1..=i {
-            for op in OpList::VALUES {
-                if !dp.contains_key(&i) || !dp.contains_key(&j) {
-                    continue;
-                }
-
-                let new_value = op.execute(i, j);
-
-                if new_value.is_err() {
-                    continue;
-                }
-
-                let new_value = new_value.unwrap();
-                let count = i32::max(*dp.get(&i).unwrap(), *dp.get(&j).unwrap()) + 1;
-
-                if new_value > goal {
-                    continue;
-                }
-
-                if *dp.get(&new_value).unwrap() > count {
-                    // we can optimize this value
-                    dp.insert(new_value, count);
-                    mem.insert(new_value, (i, j, op));
-                }
-            }
-        }
-    }
-
-    Ok((dp, mem))
-}
-
-const BELT: [f32; 14] = [
-    1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 9.6,
-];
-const EXTRACTOR: [f32; 8] = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0];
-const ADDER: [f32; 8] = [0.25, 0.333, 0.4, 0.5, 0.667, 1.0, 1.5, 2.0];
-const MULTIPLIER: [f32; 8] = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0];
 
 pub fn get_best_route(
     dp: &Dp,
@@ -118,4 +57,58 @@ pub fn get_best_route(
     result.push(this_string);
 
     Ok(result)
+}
+
+pub fn solve(limit_info: Info) -> Result<Dp, Box<dyn Error>> {
+    let goal = *limit_info.get("goal").ok_or(ConfigError::Goal)?;
+    let extractor_limit = *limit_info.get("limit").ok_or(ConfigError::Limit)?;
+
+    let mut dist: HashMap<i32, i32> = HashMap::new();
+    let mut mem = HashMap::new();
+
+    // We can mine those directly
+    for i in 1..=extractor_limit {
+        dist.insert(i, 1);
+    }
+
+    let mut change = true;
+
+    while change {
+        change = false;
+
+        if dist.contains_key(&goal) {
+            break;
+        }
+
+        let mut new_dist = dist.clone();
+
+        for (&i, &d_i) in &dist {
+            for (&j, &d_j) in &dist {
+                for op in OpList::VALUES {
+                    if !dist.contains_key(&i) || !dist.contains_key(&j) {
+                        continue;
+                    }
+
+                    let new_value = op.execute(i, j);
+
+                    if new_value.is_err() {
+                        continue;
+                    }
+
+                    let new_value = new_value.unwrap();
+                    let count = i32::max(d_i, d_j) + 1;
+
+                    if *dist.get(&new_value).unwrap_or(&i32::MAX) > count {
+                        new_dist.insert(new_value, count);
+                        mem.insert(new_value, (i, j, op));
+                        change = true;
+                    }
+                }
+            }
+        }
+
+        dist = new_dist;
+    }
+
+    Ok((dist, mem))
 }
