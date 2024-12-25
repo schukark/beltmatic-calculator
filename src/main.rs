@@ -1,7 +1,7 @@
 use error::ConfigError;
 use operations::OpList;
 use solver::{get_best_route, solve};
-use std::{collections::HashMap, error::Error};
+use std::{collections::HashMap, error::Error, time::Instant};
 use tabled::{
     settings::{themes::ColumnNames, Style},
     Table,
@@ -15,6 +15,8 @@ mod solver;
 type Info = HashMap<String, i32>;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let start = Instant::now();
+
     let (level_info, limit_info) = grammar::get_info("input.txt")?;
     let goal = *limit_info.get("goal").ok_or(ConfigError::Goal)?;
     let supported_ops = OpList::from_level_info(&level_info);
@@ -27,6 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     table.with(ColumnNames::new(["expression", "factories"]));
 
     println!("{}", table);
+    println!("Time elapsed: {:?}", start.elapsed());
 
     Ok(())
 }

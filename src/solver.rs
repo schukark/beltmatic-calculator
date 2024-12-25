@@ -2,7 +2,7 @@ use std::{collections::HashMap, error::Error};
 
 use crate::{error::ConfigError, operations::*, Info};
 
-pub type Dp = (HashMap<i32, i32>, HashMap<i32, (i32, i32, OpList)>); // Min count, mem
+pub type Dp = HashMap<i32, (i32, i32, Option<OpList>)>; // Min count, mem
 
 pub fn get_best_route(
     dp: &Dp,
@@ -15,13 +15,13 @@ pub fn get_best_route(
         .ok_or(ConfigError::ExtractorLevel)?
         - 1;
 
-    let (dist, mem) = dp;
+    let mem = dp;
 
-    if !dist.contains_key(&goal) {
+    if !mem.contains_key(&goal) {
         return Err(Box::new(ConfigError::UnreachableNumber));
     }
 
-    if !mem.contains_key(&goal) {
+    if mem.get(&goal).unwrap().2.is_none() {
         let belt_count = EXTRACTOR[extractor_level as usize] * BELT[belt_level as usize];
         return Ok(vec![(
             format!("(extractor) -> {}", goal),
@@ -30,6 +30,7 @@ pub fn get_best_route(
     }
 
     let (i, j, op) = *mem.get(&goal).ok_or(ConfigError::Goal)?;
+    let op = op.unwrap();
     let left_route = get_best_route(dp, i, level_info)?;
     let mut right_route = get_best_route(dp, j, level_info)?;
 
@@ -55,36 +56,32 @@ pub fn get_best_route(
     Ok(result)
 }
 
+const LIMIT: i32 = 100;
+#[allow(clippy::map_entry)]
 pub fn solve(limit_info: Info, available_ops: &[OpList]) -> Result<Dp, Box<dyn Error>> {
     let goal = *limit_info.get("goal").ok_or(ConfigError::Goal)?;
     let extractor_limit = *limit_info.get("limit").ok_or(ConfigError::Limit)?;
 
     let mut dist: HashMap<i32, i32> = HashMap::new();
-    let mut mem = HashMap::new();
+    let mut mem: HashMap<i32, (i32, i32, Option<OpList>)> = HashMap::new();
 
     // We can mine those directly
     for i in 1..=extractor_limit {
-        dist.insert(i, 1);
+        dist.insert(i, 0);
+        mem.insert(i, (i, 0, None));
     }
 
-    let mut change = true;
+    for _iter in 1..LIMIT {
+        for i in (-2 * goal)..=(2 * goal) {
+            for j in (-2 * goal)..=(2 * goal) {
+                if !dist.contains_key(&i) || !dist.contains_key(&j) {
+                    continue;
+                }
 
-    while change {
-        change = false;
+                let d_i = *dist.get(&i).unwrap();
+                let d_j = *dist.get(&j).unwrap();
 
-        if dist.contains_key(&goal) {
-            break;
-        }
-
-        let mut new_dist = dist.clone();
-
-        for (&i, &d_i) in &dist {
-            for (&j, &d_j) in &dist {
                 for &op in available_ops {
-                    if !dist.contains_key(&i) || !dist.contains_key(&j) {
-                        continue;
-                    }
-
                     let new_value = op.execute(i, j);
 
                     if new_value.is_err() {
@@ -92,23 +89,21 @@ pub fn solve(limit_info: Info, available_ops: &[OpList]) -> Result<Dp, Box<dyn E
                     }
 
                     let new_value = new_value.unwrap();
-                    if new_value > goal * 2 || new_value < -goal * 2 {
-                        continue;
-                    }
 
                     let count = i32::max(d_i, d_j) + 1;
 
-                    if *dist.get(&new_value).unwrap_or(&i32::MAX) > count {
-                        new_dist.insert(new_value, count);
-                        mem.insert(new_value, (i, j, op));
-                        change = true;
+                    if !dist.contains_key(&new_value) || *dist.get(&new_value).unwrap() > count {
+                        dist.insert(new_value, count);
+                        mem.insert(new_value, (i, j, Some(op)));
                     }
                 }
             }
         }
 
-        dist = new_dist;
+        if mem.contains_key(&goal) {
+            break;
+        }
     }
 
-    Ok((dist, mem))
+    Ok(mem)
 }

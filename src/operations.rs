@@ -18,17 +18,17 @@ pub enum OpList {
 impl Operation for OpList {
     fn execute(&self, a: i32, b: i32) -> Result<i32, Box<dyn Error>> {
         match self {
-            OpList::Add => Ok(a + b),
-            OpList::Mul => Ok(a * b),
-            OpList::Sub => Ok(a - b),
+            OpList::Add => a.checked_add(b).ok_or("add overflow".into()),
+            OpList::Mul => a.checked_mul(b).ok_or("add overflow".into()),
+            OpList::Sub => a.checked_sub(b).ok_or("add overflow".into()),
             OpList::Div => {
                 if b == 0 {
                     Err("Division by zero".into())
                 } else {
-                    Ok(a / b)
+                    a.checked_div(b).ok_or("add overflow".into())
                 }
             }
-            OpList::Exp => Ok(a.pow(b as u32)),
+            OpList::Exp => a.checked_pow(b.try_into()?).ok_or("add overflow".into()),
         }
     }
 }
